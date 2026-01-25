@@ -23,9 +23,11 @@ import TeacherClasses from './pages/TeacherClasses';
 import TeacherVoeux from './pages/TeacherVoeux';
 import TeacherResources from './pages/TeacherResources';
 
-// --- PAGES ENSEIGNANTS ---
+// --- PAGES ETUDIANTS ---
 import StudentDashboard from './pages/StudentDashboard';
 import StudentTimetable from './pages/StudentTimetable';
+import StudentLogin from './pages/StudentLogin';
+import StudentResources from './pages/StudentResources'; 
 
 /**
  * Composant principal gérant le routage de l'application "EDT Universitaire"
@@ -60,6 +62,12 @@ function App() {
         {/* --- ROUTES ÉTUDIANTS --- */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/student/timetable" element={<StudentTimetable />} /> 
+        <Route path="/login/student" element={<StudentLogin />} />
+        <Route path="/student/resources" element={<StudentResources />} />
+
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register-student" element={<RegisterStudent />} />
         
       </Routes>
     </Router>

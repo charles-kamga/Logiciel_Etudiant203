@@ -3,7 +3,8 @@ import StudentLayout from '../components/StudentLayout';
 import { Calendar as CalendarIcon, Clock, MapPin, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 
-const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+// Ajout de "Dimanche" à la liste des jours
+const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 const SLOTS = ["08:00 - 10:00", "10:00 - 12:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00"];
 
 const StudentTimetable = () => {
@@ -120,4 +121,4 @@ const StudentTimetable = () => {
   );
 };
 
-export default StudentTimetable; 
+export default StudentTimetable;
