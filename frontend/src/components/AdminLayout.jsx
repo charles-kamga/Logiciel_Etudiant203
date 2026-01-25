@@ -91,6 +91,52 @@ const AdminLayout = ({ children }) => {
       </main>
     </div>
   );
+  
+  {/* --- FENÊTRE DE CONFIRMATION PERSONNALISÉE --- */}
+      {deleteModal.show && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[1000] p-6 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+            
+            {/* Icône d'alerte */}
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+              <AlertTriangle size={32} />
+            </div>
+
+            {/* Texte de confirmation */}
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-black text-slate-800 mb-2">Confirmer la suppression ?</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Êtes-vous sûr de vouloir supprimer la salle <span className="font-bold text-slate-800">"{deleteModal.nom}"</span> ? 
+                Cette action est irréversible.
+              </p>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="flex space-x-3">
+              <button 
+                onClick={() => setDeleteModal({ show: false, id: null, nom: '' })}
+                className="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-200 transition-all"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 py-4 bg-red-600 text-white font-bold rounded-2xl shadow-lg shadow-red-200 hover:bg-red-700 transition-all active:scale-95"
+              >
+                Supprimer
+              </button>
+            </div>
+
+            {/* Bouton de fermeture rapide */}
+            <button 
+              onClick={() => setDeleteModal({ show: false, id: null, nom: '' })}
+              className="absolute top-6 right-6 text-slate-300 hover:text-slate-800 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
 };
 
 export default AdminLayout;

@@ -16,43 +16,54 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  nom       String
-  email     String   @unique
-  password  String
-  role      String   @default("TEACHER") // On utilise un String au lieu de Enum pour SQLite
-  ue        UE[]     
-  desid     Desiderata[]
+  id          Int          @id @default(autoincrement())
+  nom         String
+  email       String       @unique
+  password    String
+  role        String       @default("TEACHER")
+  departement String?
+  specialite  String?
+  ue          UE[]
+  desid       Desiderata[]
+  resources   Resource[]
+  classeId    Int?
+  classe      Classe?  @relation(fields: [classeId], references: [id])
 }
 
 model Salle {
-  id        Int      @id @default(autoincrement())
-  nom       String   @unique
-  capacite  Int
-  sessions  Session[]
+  id          Int       @id @default(autoincrement())
+  nom         String    @unique
+  capacite    Int
+  departement String    @default("Informatique")
+  batiment    String    @default("N/A")
+  sessions    Session[]
 }
 
 model Classe {
-  id        Int      @id @default(autoincrement())
-  nom       String   @unique
-  effectif  Int
-  filiere   String
-  sessions  Session[]
+  id          Int       @id @default(autoincrement())
+  nom         String    @unique
+  effectif    Int
+  filiere     String
+  departement String
+  sessions    Session[]
+  students    User[]
 }
 
 model UE {
-  id          Int      @id @default(autoincrement())
-  code        String   @unique
-  nom         String
+  id           Int          @id @default(autoincrement())
+  code         String       @unique
+  nom          String
   enseignantId Int
-  enseignant   User    @relation(fields: [enseignantId], references: [id])
-  sessions    Session[]
+  enseignant   User         @relation(fields: [enseignantId], references: [id])
+  sessions     Session[]
+  desid        Desiderata[]
+  resources    Resource[]
 }
 
 model Session {
   id           Int      @id @default(autoincrement())
-  jour         String   
-  plageHoraire String   
+  jour         String
+  plageHoraire String
   date         DateTime
   salleId      Int
   salle        Salle    @relation(fields: [salleId], references: [id])
@@ -61,13 +72,29 @@ model Session {
   classeId     Int
   classe       Classe   @relation(fields: [classeId], references: [id])
   semestre     Int      @default(1)
-  anneeAcad    String   
+  anneeAcad    String
 }
 
 model Desiderata {
-  id           Int      @id @default(autoincrement())
+  id           Int    @id @default(autoincrement())
   enseignantId Int
-  enseignant   User     @relation(fields: [enseignantId], references: [id])
+  enseignant   User   @relation(fields: [enseignantId], references: [id])
   jour         String
   plageHoraire String
+  ueId         Int?
+  ue           UE?    @relation(fields: [ueId], references: [id])
+}
+
+model Resource {
+  id           Int      @id @default(autoincrement())
+  nom          String
+  type         String   // pdf, docx, pptx, etc.
+  categorie    String   // Cours, TD, Examen, Autre
+  url          String   // Chemin du fichier sur le serveur
+  taille       String
+  date         DateTime @default(now())
+  teacherId    Int
+  teacher      User     @relation(fields: [teacherId], references: [id])
+  ueId         Int
+  ue           UE       @relation(fields: [ueId], references: [id])
 }

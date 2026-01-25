@@ -1,7 +1,7 @@
 import React from 'react';
 import logoUY1 from '../assets/logo_uy1.png';
 import Timetable from '../components/Timetable';
-import { Calendar, Users, Home, LogOut, Bell, ClipboardList } from 'lucide-react';
+import { Calendar, Users, Home, LogOut, Bell, ClipboardList, UserSquare2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -18,40 +18,40 @@ const Dashboard = () => {
       {/* Sidebar Dynamique */}
       <div className="w-64 bg-blue-900 text-white p-6 flex flex-col">
         {/* Sidebar Branding */}
-<div className="flex items-center space-x-3 mb-10 px-2">
-  {/* Logo Image UY1 */}
-  <img 
-    src={logoUY1} 
-    alt="Logo UY1" 
-    className="h-9 w-auto object-contain bg-white p-0.5 rounded-md" 
-  />
-  
-  {/* Séparateur vertical adapté au fond sombre */}
-  <div className="h-7 w-[1.5px] bg-blue-700"></div>
+        <div className="flex items-center space-x-3 mb-10 px-2">
+          {/* Logo Image UY1 */}
+          <img 
+            src={logoUY1} 
+            alt="Logo UY1" 
+            className="h-9 w-auto object-contain bg-white p-0.5 rounded-md" 
+          />
+          
+          {/* Séparateur vertical adapté au fond sombre */}
+          <div className="h-7 w-[1.5px] bg-blue-700"></div>
 
-  {/* Texte du Logo en blanc/bleu clair */}
-  <div className="flex flex-col justify-center">
-    <span className="text-[8px] font-bold text-blue-400 uppercase tracking-[0.2em] leading-none mb-1">
-      UY1 - ICT
-    </span>
-    <span className="text-lg font-black text-white tracking-tight leading-none">
-      EDT Universitaire
-    </span>
-  </div>
-</div>
+          {/* Texte du Logo en blanc/bleu clair */}
+          <div className="flex flex-col justify-center">
+            <span className="text-[8px] font-bold text-blue-400 uppercase tracking-[0.2em] leading-none mb-1">
+              UY1 - ICT
+            </span>
+            <span className="text-lg font-black text-white tracking-tight leading-none">
+              EDT Universitaire
+            </span>
+          </div>
+        </div>
         
         <nav className="flex-1 space-y-2">
-          <button className="w-full flex items-center space-x-3 p-3 bg-blue-800 rounded-lg">
+          <button onClick={() => navigate('/dashboard')} className="w-full flex items-center space-x-3 p-3 bg-blue-800 rounded-lg">
             <Calendar size={20} /> <span>Emploi du temps</span>
           </button>
 
           {/* Menu spécifique ADMIN */}
           {role === 'ADMIN' && (
             <>
-              <button className="w-full flex items-center space-x-3 p-3 hover:bg-blue-800 rounded-lg transition-colors text-blue-200 hover:text-white">
+              <button onClick={() => navigate('/admin/enseignants')} className="w-full flex items-center space-x-3 p-3 hover:bg-blue-800 rounded-lg transition-colors text-blue-200 hover:text-white">
                 <Users size={20} /> <span>Enseignants</span>
               </button>
-              <button className="w-full flex items-center space-x-3 p-3 hover:bg-blue-800 rounded-lg transition-colors text-blue-200 hover:text-white">
+              <button onClick={() => navigate('/admin/salles')} className="w-full flex items-center space-x-3 p-3 hover:bg-blue-800 rounded-lg transition-colors text-blue-200 hover:text-white">
                 <Home size={20} /> <span>Salles & Classes</span>
               </button>
             </>
@@ -59,9 +59,19 @@ const Dashboard = () => {
 
           {/* Menu spécifique TEACHER */}
           {role === 'TEACHER' && (
-            <button className="w-full flex items-center space-x-3 p-3 hover:bg-blue-800 rounded-lg transition-colors text-blue-200 hover:text-white">
-              <ClipboardList size={20} /> <span>Mes Désidératas</span>
-            </button>
+            <>
+              <button className="w-full flex items-center space-x-3 p-3 hover:bg-blue-800 rounded-lg transition-colors text-blue-200 hover:text-white">
+                <ClipboardList size={20} /> <span>Mes Désidératas</span>
+              </button>
+              
+              {/* BOUTON D'ACCÈS AU PORTAIL ENSEIGNANT (Nouveauté demandée) */}
+              <button 
+                onClick={() => navigate('/teacher/dashboard')} 
+                className="w-full flex items-center space-x-3 p-3 bg-teal-600 hover:bg-teal-700 rounded-lg transition-all mt-6 font-bold shadow-lg shadow-teal-900/20 text-white"
+              >
+                <UserSquare2 size={20} /> <span>Mon Portail Privé</span>
+              </button>
+            </>
           )}
         </nav>
 
