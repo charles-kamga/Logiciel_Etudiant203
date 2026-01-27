@@ -15,10 +15,26 @@ const prisma = new PrismaClient();
 // Configuration des Middlewares
 app.use(cors());
 app.use(express.json());
+// Cette ligne permet au navigateur d'accéder au dossier "uploads"
 
-// CRUCIALE pour le téléchargement : Servir les fichiers statiques
-// On s'assure que le dossier 'uploads' est accessible via le web
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// 1. On définit le chemin du dossier uploads
+const uploadsPath = path.join(__dirname, '../uploads');
+
+// 2. On vérifie (et crée si besoin) le dossier pour éviter les erreurs 404
+if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath, { recursive: true });
+    console.log("Dossier 'uploads' créé !");
+}
+
+// 3. Configuration de l'accès statique avec CORS et Force Download
+app.use('/uploads', cors(), express.static(uploadsPath, {
+    setHeaders: (res, path) => {
+        // Ces headers forcent le navigateur à proposer le téléchargement au lieu de bloquer
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Content-Disposition', 'attachment'); 
+        res.set('Access-Control-Expose-Headers', 'Content-Disposition');
+    }
+}));
 
 // ============================================================
 // --- 1. AUTHENTIFICATION (VERSION ROBUSTE) ---
@@ -158,6 +174,196 @@ app.delete('/api/classes/:id', async (req, res) => {
     res.status(400).json({ error: "Erreur suppression classe" });
   }
 });
+
+// ============================================================
+// --- 4. GESTION DES ETUDIANTS ET UE ---
+// ============================================================
+
+app.post('/api/register-student', async (req, res) => {
+  const { nom, email, matricule, classeId, password } = req.body;
+
+  try {
+    const newUser = await prisma.user.create({
+      data: {
+        nom,
+        email: email.toLowerCase().trim(),
+        password, 
+        role: 'STUDENT',
+        classeId: parseInt(classeId)
+      },
+      // On inclut les infos de la classe pour que le frontend les ait tout de suite
+      include: { classe: true } 
+    });
+
+    // On retire le mot de passe avant de renvoyer l'objet
+    const { password: _, ...studentData } = newUser;
+    
+    // On renvoie l'étudiant créé pour que le frontend puisse le connecter
+    res.status(201).json(studentData);
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ error: "L'email ou le matricule existe déjà." });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: email },
+      include: { classe: true } // On récupère sa classe pour l'emploi du temps
+    });
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ error: "Email ou mot de passe incorrect." });
+    }
+
+    // On renvoie les infos de l'utilisateur (sans le mot de passe)
+    const { password: _, ...userData } = user;
+    res.json(userData);
+  } catch (error) {
+    res.status(500).json({ error: "Erreur serveur lors de la connexion." });
+  }
+});
+
+
+app.get('/api/students/:id/dashboard', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const student = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+      select: { 
+        id: true,
+        nom: true,
+        classeId: true,
+        classe: true 
+      }
+    });
+
+    if (!student || !student.classeId) {
+      return res.status(404).json({ 
+        error: "Profil ou classe introuvable. Contactez l'administration." 
+      });
+    }
+
+    const daysOrder = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+    const jsDayToName = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    const now = new Date();
+    const todayName = jsDayToName[now.getDay()];
+    const currentTime = now.getHours().toString().padStart(2, '0') + ":" + 
+                        now.getMinutes().toString().padStart(2, '0');
+
+    const allSessions = await prisma.session.findMany({
+      where: { classeId: student.classeId },
+      include: {
+        ue: { include: { enseignant: true } },
+        salle: true
+      }
+    });
+
+    let nextSession = null;
+    const startIndex = daysOrder.indexOf(todayName);
+    const rollingDays = [...daysOrder.slice(startIndex), ...daysOrder.slice(0, startIndex)];
+
+    for (const day of rollingDays) {
+      let sessionsOfDay = allSessions.filter(s => s.jour === day);
+      sessionsOfDay.sort((a, b) => a.plageHoraire.localeCompare(b.plageHoraire));
+
+      if (day === todayName) {
+        nextSession = sessionsOfDay.find(s => s.plageHoraire.split(' - ')[0] > currentTime);
+      } else {
+        nextSession = sessionsOfDay[0];
+      }
+      if (nextSession) break;
+    }
+
+    const uniqueUEs = Array.from(
+      new Map(allSessions.map(s => [s.ue.id, s.ue])).values()
+    );
+
+    let recentResources = [];
+    try {
+      const classUeIds = uniqueUEs.map(ue => ue.id);
+      if (classUeIds.length > 0) {
+        recentResources = await prisma.ressource.findMany({
+          where: { ueId: { in: classUeIds } },
+          take: 8,
+          orderBy: { id: 'desc' },
+          include: { ue: true }
+        });
+      }
+    } catch (resourceError) {
+      console.error("Erreur ressources dashboard:", resourceError);
+    }
+
+    res.json({
+      studentInfo: {
+        id: student.id,
+        nom: student.nom,
+        classe: student.classe?.nom || "Non définie"
+      },
+      nextSession,
+      recentResources,
+      classCourses: uniqueUEs
+    });
+
+  } catch (error) {
+    console.error("--- ERREUR SERVEUR DASHBOARD ---", error);
+    res.status(500).json({ error: "Erreur lors de la génération du dashboard." });
+  }
+});
+
+// backend/src/server.js
+
+app.get('/api/students/:id/resources', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Trouver l'étudiant pour récupérer son classeId
+    const student = await prisma.user.findUnique({
+      where: { id: parseInt(id) },
+      select: { classeId: true }
+    });
+
+    if (!student || !student.classeId) {
+      console.log(`Étudiant ${id} sans classe.`);
+      return res.json([]);
+    }
+
+    // 2. Trouver les UE programmées pour cette classe (via les sessions)
+    const sessions = await prisma.session.findMany({
+      where: { classeId: student.classeId },
+      select: { ueId: true }
+    });
+
+    const ueIds = [...new Set(sessions.map(s => s.ueId))];
+
+    if (ueIds.length === 0) {
+      return res.json([]);
+    }
+
+    // 3. Récupérer les ressources (Modèle : Resource)
+    const resources = await prisma.resource.findMany({ // <--- Bien écrit "resource"
+      where: {
+        ueId: { in: ueIds }
+      },
+      include: {
+        ue: true,       // Inclus les infos de l'UE
+        teacher: true   // Inclus les infos du prof (nom, etc.)
+      },
+      orderBy: { date: 'desc' }
+    });
+
+    res.json(resources);
+
+  } catch (error) {
+    console.error("ERREUR CRITIQUE :", error.message);
+    res.status(500).json({ error: "Erreur lors du chargement des fichiers." });
+  }
+});
+
 
 // ============================================================
 // --- 4. GESTION DES ENSEIGNANTS ET DASHBOARD ---

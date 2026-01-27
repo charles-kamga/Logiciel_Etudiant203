@@ -79,7 +79,7 @@ const Login = () => {
           <div className="space-y-5">
             {/* BOUTON ÉTUDIANT */}
             <button 
-              onClick={() => handleLogin('STUDENT')}
+              onClick={() => navigate('/login/student')}
               className="w-full group bg-white p-7 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-blue-100/50 hover:border-blue-100 transition-all duration-300 flex items-center justify-between"
             >
               <div className="flex items-center">
